@@ -1,0 +1,103 @@
+name: CEREBRON Farm 33 Counterexample Red Team
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  agents:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {role: ASSUMPTION_BREAKER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: hidden assumptions and boundary conditions}
+          - {role: COUNTEREXAMPLE_HUNTER, model: huggingface-projects/gemma-2-9b-it, focus: minimal explicit counterexamples}
+          - {role: EDGE_CASE_EXPLORER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: edge cases and singular limits}
+          - {role: ADVERSARIAL_REASONING_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: reasoning-chain failure and invalid inference}
+          - {role: LOGIC_FALSIFIER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: logical consistency and quantifier errors}
+          - {role: MATHEMATICAL_COUNTEREXAMPLE_SPECIALIST, model: huggingface-projects/gemma-2-9b-it, focus: mathematical counterexamples and domain restrictions}
+          - {role: SCIENTIFIC_FALSIFICATION_SPECIALIST, model: huggingface-projects/llama-3.2-3B-Instruct, focus: falsifiable empirical claims and decisive tests}
+          - {role: DATA_ANOMALY_HUNTER, model: huggingface-projects/gemma-2-9b-it, focus: anomalous data patterns and measurement failure}
+          - {role: CAUSALITY_ATTACKER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: confounding reverse causality and causal identification}
+          - {role: MODEL_MISSPECIFICATION_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: omitted variables wrong structure and misspecification}
+          - {role: SCALE_REGIME_BREAKER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: scale transfer and regime changes}
+          - {role: BOUNDARY_CONDITION_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: boundary initial and terminal conditions}
+          - {role: ADVERSARIAL_INPUT_SPECIALIST, model: huggingface-projects/llama-3.2-3B-Instruct, focus: adversarial inputs and robustness limits}
+          - {role: FAILURE_MODE_MINER, model: huggingface-projects/gemma-2-9b-it, focus: failure modes degradation and cascading effects}
+          - {role: HIDDEN_DEPENDENCY_AUDITOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: hidden dependencies shared causes and coupling}
+          - {role: CONTRADICTION_ATTACKER, model: huggingface-projects/gemma-2-9b-it, focus: internal cross-source and cross-model contradictions}
+          - {role: INDEPENDENT_RED_TEAM, model: huggingface-projects/llama-3.2-3B-Instruct, focus: independent adversarial reconstruction}
+          - {role: REPLICATION_CHALLENGER, model: huggingface-projects/gemma-2-9b-it, focus: reproducibility replication and transfer failure}
+          - {role: EVIDENCE_STRESS_TESTER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: evidence strength provenance and claim-evidence mismatch}
+          - {role: OMEGA_COUNTEREXAMPLE_RED_TEAM_JUDGE, model: huggingface-projects/gemma-2-9b-it, focus: evidence-bounded synthesis without false closure}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install adaptive Hugging Face Gradio runtime
+        run: pip install -q hf-gradio
+      - name: Run real external model role
+        env:
+          ROLE: ${{ matrix.role }}
+          MODEL: ${{ matrix.model }}
+          FOCUS: ${{ matrix.focus }}
+        run: python worker/farm_worker.py
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: farm33-${{ matrix.role }}
+          path: results/${{ matrix.role }}.json
+          if-no-files-found: warn
+
+  omega:
+    needs: agents
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: farm33-*
+          path: collected
+          merge-multiple: true
+      - name: Build Omega evidence packet
+        run: |
+          python - <<'PY'
+          import json, glob, os
+          rows=[]
+          for p in glob.glob('collected/*.json'):
+              try:
+                  rows.append(json.load(open(p, encoding='utf-8')))
+              except Exception as e:
+                  rows.append({'file':p,'status':'ARTIFACT_PARSE_FAILED','error':repr(e),'inference_success':False})
+          successes=[x for x in rows if x.get('inference_success') is True and x.get('status')=='UNREVIEWED_EXTERNAL_AGENT_OUTPUT']
+          failures=[x for x in rows if x not in successes]
+          packet={
+            'farm':33,
+            'name':'Counterexample Red Team',
+            'roles_expected':20,
+            'roles_returned':len(rows),
+            'successful_external_ai_calls':len(successes),
+            'failed_external_ai_calls':len(failures),
+            'all_external_calls_verified_successful':len(rows)==20 and len(successes)==20,
+            'providers':sorted(set(x.get('provider','') for x in rows if x.get('provider'))),
+            'model_families':sorted(set(x.get('model','') for x in rows if x.get('model'))),
+            'epistemic_status':'UNREVIEWED_EXTERNAL_AGENT_OUTPUT',
+            'rules':['CLAIM<=EVIDENCE','COUNTEREXAMPLE>CONSENSUS','HYPOTHETICAL_COUNTEREXAMPLE!=ACTUAL_COUNTEREXAMPLE','FAILURE_TO_FALSIFY!=PROOF','VERIFY_BEFORE_COMMIT'],
+            'results':rows
+          }
+          os.makedirs('omega',exist_ok=True)
+          json.dump(packet,open('omega/farm33-omega.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print(json.dumps({k:v for k,v in packet.items() if k!='results'},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counterexample-red-team-farm-33-omega-packet
+          path: omega/farm33-omega.json
