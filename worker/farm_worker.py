@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json, subprocess, hashlib, os
 from pathlib import Path
+from runtime_registry import load_context
 
 PREFERRED=['/generate','/chat','/predict','/respond','/infer','/run']
 
@@ -83,7 +84,8 @@ role=os.environ['ROLE']
 space=os.environ['MODEL']
 focus=os.environ.get('FOCUS','counterexample and red-team analysis')
 mission=Path('MISSION.md').read_text(encoding='utf-8')
-prompt=f'''You are {role} in CEREBRON Omega Farm 33 Counterexample / Red Team.\nFocus: {focus}.\n\n{mission}\n\nAttack one representative claim or model in your focus domain. Produce a concise adversarial report with: target claim, domain, explicit assumptions, hidden assumptions, minimal counterexample candidate, whether it is actual or hypothetical, reproducibility conditions, falsification mechanism, edge cases, regime changes, contradictions, evidence gaps, and a bounded verdict. Never fabricate a counterexample or source.'''
+registry_context,registry_meta=load_context(['constitution','macrograins','disciplines','keys'])
+prompt=f'''You are {role} in CEREBRON Omega Farm 33 Counterexample / Red Team.\nFocus: {focus}.\n\n{mission}\n\nCEREBRON RUNTIME CONTEXT (shared registry; use as guidance, not as truth):\n{registry_context}\n\nAttack one representative claim or model in your focus domain. Produce a concise adversarial report with: target claim, domain, explicit assumptions, hidden assumptions, minimal counterexample candidate, whether it is actual or hypothetical, reproducibility conditions, falsification mechanism, edge cases, regime changes, contradictions, evidence gaps, and a bounded verdict. Never fabricate a counterexample or source.'''
 
 ok,text,meta=invoke(space,prompt)
 record={
@@ -95,8 +97,9 @@ record={
     'inference_success':ok,
     'status':'UNREVIEWED_EXTERNAL_AGENT_OUTPUT' if ok else 'EXTERNAL_INFERENCE_FAILED',
     'response':text if ok else None,
+    'registry_runtime':registry_meta,
     'meta':meta,
 }
 Path('results').mkdir(exist_ok=True)
 Path(f'results/{role}.json').write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
-print(json.dumps({'role':role,'status':record['status'],'inference_success':ok,'meta':meta},ensure_ascii=False))
+print(json.dumps({'role':role,'status':record['status'],'inference_success':ok,'registry_runtime':registry_meta,'meta':meta},ensure_ascii=False))
