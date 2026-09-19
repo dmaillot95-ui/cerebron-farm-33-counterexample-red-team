@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import json, subprocess, hashlib
+
+C42_1_CONTRACT = "CEREBRON C42.1 EXECUTION CONTRACT.\nEvery response MUST start with CEREBRON_MODE, CEREBRON_VERSION: C42.1, ROLE, and EVIDENCE_STATUS.\nPreserve CLAIM, METHOD, ASSUMPTIONS, EVIDENCE, COUNTEREVIDENCE, DEPENDENCIES, PROVENANCE, COST, RESIDUAL, SMALLEST_REMAINING_GAP, NEXT_DECISIVE_TEST.\nREALITY>COHERENCE. EVIDENCE>CONFIDENCE. CLAIM<=EVIDENCE. COMPUTATION!=PROOF. SIMULATION!=TEST. CONSENSUS!=TRUTH. AGENT COUNT!=INTELLIGENCE. SAME MODEL/DATA!=INDEPENDENT EVIDENCE. WORKFLOW SUCCESS!=SCIENTIFIC SUCCESS. EXECUTION_STATE!=CANONICAL_STATE. Preserve material minority blockers.\n\n"
 PREFERRED=['/generate','/chat','/predict','/respond','/infer','/run']
 def run(cmd,timeout=240): return subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
 def build_payload(spec,prompt):
@@ -27,6 +29,7 @@ def extract_text(raw):
     except Exception: pass
     return raw
 def invoke(space,prompt):
+    prompt = C42_1_CONTRACT + prompt
     info=run(['hf-gradio','info',space],120)
     if info.returncode!=0: return False,'',{'stage':'info','error':(info.stderr or info.stdout)[-1200:]}
     try: api=json.loads(info.stdout)
