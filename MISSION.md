@@ -1,29 +1,23 @@
-# CÉRÉBRON Ω — FARM 33 — COUNTEREXAMPLE / RED TEAM
+# CEREBRON — LEARNING MECHANISMS VALIDATION CAMPAIGN
 
-Mission: rechercher activement des contre-exemples, cas limites, contradictions, hypothèses cachées et modes de défaillance capables de falsifier ou restreindre une affirmation, un modèle, une preuve, une architecture ou une généralisation.
+Source: F08 targeted learning-mechanisms campaign, run 35806105920.
+Epistemic status: UNREVIEWED_EXTERNAL_AGENT_OUTPUT. Do not treat F08 consensus as proof.
 
-Règles absolues:
-- REALITY > COHERENCE
-- CLAIM <= EVIDENCE
-- COUNTEREXAMPLE > CONSENSUS
-- HYPOTHETICAL COUNTEREXAMPLE != ACTUAL COUNTEREXAMPLE
-- FAILURE TO FALSIFY != PROOF
-- SIMULATION != TEST
-- MODEL != REALITY
-- REPLICATION BEFORE GENERALIZATION
-- UNKNOWN REMAINS UNKNOWN
-- VERIFY BEFORE COMMIT
+Claims/candidates to test independently:
+1. Domain randomization / automatic domain randomization can improve robustness and sim-to-real transfer when the randomized training distribution covers relevant deployment variation.
+2. DAgger-style interactive imitation and validated failure replay can improve a policy by concentrating new supervision on states induced by the current policy.
+3. Policy/knowledge distillation can compress useful behavior into a smaller policy/model, but can lose capabilities and does not itself prove transfer.
+4. Continual-learning replay/adapters may reduce catastrophic forgetting; this requires regression and transfer testing.
+5. Curriculum, hard-example mining and active learning may improve sample efficiency when selection is informative rather than benchmark leakage.
+6. Reversible LoRA/adapters are a candidate mechanism for CEREBRON G1 specialization, not yet demonstrated here.
 
-Chaque rôle doit distinguer explicitement:
-1. affirmation attaquée;
-2. domaine de validité;
-3. hypothèses explicites et cachées;
-4. contre-exemple réel, candidat ou seulement hypothétique;
-5. conditions minimales de reproduction;
-6. mécanisme de falsification;
-7. preuves disponibles et preuves manquantes;
-8. cas limites et changements de régime;
-9. contradictions internes ou inter-sources;
-10. verdict borné: FALSIFIED / SURVIVED_THIS_TEST / INCONCLUSIVE / UNKNOWN.
+CEREBRON transfer hypothesis:
+validated task trajectories + audited RED/OPEN/REJECT corrections -> versioned curriculum -> reversible adapter -> cold held-out evaluation -> transfer evaluation -> ablation/regression -> F72/AFAH -> promote or rollback.
 
-Une sortie de modèle externe est toujours UNREVIEWED_EXTERNAL_AGENT_OUTPUT jusqu'à audit Ω indépendant.
+Required:
+- distinguish documented mechanism from CEREBRON-specific extrapolation;
+- identify dependencies/common-source contamination;
+- actively seek counterexamples and failure regimes;
+- no claim of trained six-AI weights;
+- design measurable G0-vs-G1 tests with cold no-RAG, transfer no-RAG, with-RAG, ablation and regression;
+- SYNTHETIC!=REAL; SIMULATION!=TEST; WORKFLOW_SUCCESS!=LEARNING; CLAIM<=EVIDENCE.
