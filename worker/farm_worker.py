@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, subprocess, hashlib
+import json, subprocess, hashlib, os, pathlib, time
 
 C42_1_CONTRACT = "CEREBRON C42.1 EXECUTION CONTRACT.\nEvery response MUST start with CEREBRON_MODE, CEREBRON_VERSION: C42.1, ROLE, and EVIDENCE_STATUS.\nPreserve CLAIM, METHOD, ASSUMPTIONS, EVIDENCE, COUNTEREVIDENCE, DEPENDENCIES, PROVENANCE, COST, RESIDUAL, SMALLEST_REMAINING_GAP, NEXT_DECISIVE_TEST.\nREALITY>COHERENCE. EVIDENCE>CONFIDENCE. CLAIM<=EVIDENCE. COMPUTATION!=PROOF. SIMULATION!=TEST. CONSENSUS!=TRUTH. AGENT COUNT!=INTELLIGENCE. SAME MODEL/DATA!=INDEPENDENT EVIDENCE. WORKFLOW SUCCESS!=SCIENTIFIC SUCCESS. EXECUTION_STATE!=CANONICAL_STATE. Preserve material minority blockers.\n\n"
 PREFERRED=['/generate','/chat','/predict','/respond','/infer','/run']
@@ -44,3 +44,18 @@ def invoke(space,prompt):
             text=extract_text(pred.stdout); return True,text,{'stage':'predict','endpoint':endpoint,'sha256':hashlib.sha256(text.encode()).hexdigest()}
         errors.append((pred.stderr or pred.stdout)[-700:])
     return False,'',{'stage':'predict','error':' | '.join(errors[-3:]) or 'No compatible endpoint'}
+
+
+role=os.getenv('ROLE','UNKNOWN_ROLE')
+model=os.getenv('MODEL','huggingface-projects/llama-3.2-3B-Instruct')
+focus=os.getenv('FOCUS','counterexample and red-team analysis')
+mission=pathlib.Path('MISSION.md').read_text(encoding='utf-8')
+prompt=f"""You are {role} in CEREBRON Farm 33 Counterexample Red Team.
+Focus: {focus}.
+{mission}
+Return a concise auditable falsification report. Separate actual counterexamples, candidate counterexamples, unsupported attacks, surviving claims, dependencies, and decisive next tests."""
+ok,text,meta=invoke(model,prompt)
+out={'farm':33,'role':role,'focus':focus,'model':model,'provider':'huggingface-space-zerogpu','inference_success':bool(ok),'status':'UNREVIEWED_EXTERNAL_AGENT_OUTPUT' if ok else 'EXTERNAL_INFERENCE_FAILED','output':text if ok else None,'error':None if ok else meta.get('error'),'meta':meta,'timestamp':int(time.time())}
+pathlib.Path('results').mkdir(exist_ok=True)
+pathlib.Path(f'results/{role}.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
+print(json.dumps({'role':role,'model':model,'inference_success':bool(ok),'status':out['status']},ensure_ascii=False))
